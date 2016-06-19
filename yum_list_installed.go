@@ -17,6 +17,12 @@ type Stats struct {
         PackageList    string `json:"package_list"`
 }
 
+type PackageInfo struct {
+        PackageName    string `json:"package_name"`
+        PackageVersion string `json:"pachage_version"`
+        PackageRepo    string `json:"package_repo"`
+}
+
 func main() {
     cmd := exec.Command("yum", "list", "installed")
     stdout, err := cmd.StdoutPipe()
@@ -33,7 +39,7 @@ func main() {
 
     cmd.Start()
 
-    lists := make([]string, 0, 10)
+    lists := make([]string, 0, 500)
     scanner := bufio.NewScanner(stdout)
     i := 0
     for scanner.Scan() {
@@ -51,6 +57,32 @@ func main() {
     list:= strings.Join(lists, " ")
     rep := regexp.MustCompile(`[ ]+`)
     list = rep.ReplaceAllString(list, " ")
+
+    list_slice := strings.Split(list, " ")
+
+    var package_name string
+    var package_version string
+    var package_repo string
+
+    n :=0
+    for i := 0; i < len(list_slice); i++ {
+        if n == 0 {
+            package_name = list_slice[i]
+            n = n+1
+        } else if n == 1 {
+            package_version = list_slice[i]
+            n = n+1
+        } else {
+            package_repo = list_slice[i]
+            n = 0
+            package_info := &PackageInfo{
+                    PackageName:       package_name,
+                    PackageVersion:    package_version,
+                    PackageRepo:       package_repo,
+            }
+            fmt.Println(package_info)
+        }
+    }
 
     stats := &Stats{
             HostName:       hostname,

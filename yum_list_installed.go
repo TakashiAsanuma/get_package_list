@@ -8,6 +8,7 @@ import (
     "bytes"
     "runtime"
     "strings"
+    "regexp"
 )
 
 type Stats struct {
@@ -48,6 +49,8 @@ func main() {
     }
 
     list:= strings.Join(lists, " ")
+    rep := regexp.MustCompile(`[ ]+`)
+    list = rep.ReplaceAllString(list, " ")
 
     stats := &Stats{
             HostName:       hostname,

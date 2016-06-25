@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"runtime"
+	//"runtime"
 	"strings"
 )
 
@@ -24,18 +24,50 @@ type Resultslice struct {
 	Packages []PackageInfo
 }
 
-func main() {
-	cmd := exec.Command("yum", "list", "installed")
+func get_os_name() string {
+  cmd := exec.Command("cat", "/etc/issue")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	hostname, err := os.Hostname()
+	cmd.Start()
+	scanner := bufio.NewScanner(stdout)
+
+  var os_name string
+  i := 0
+	for scanner.Scan() {
+		//Get first line
+		if i == 0 {
+      os_name = scanner.Text()
+			if err := scanner.Err(); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+      break
+    }
+  }
+  return os_name
+}
+
+func main() {
+	var r Resultslice
+
+	host_name, err := os.Hostname()
 	if err != nil {
 		fmt.Println("Get Hostname error:", err)
 		return
+  }
+
+	r.HostName = host_name
+	r.HostOs = get_os_name()
+
+	cmd := exec.Command("yum", "list", "installed")
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	cmd.Start()
@@ -63,7 +95,6 @@ func main() {
 	var package_name string
 	var package_version string
 	var package_repo string
-	var r Resultslice
 
 	n := 0
 	for i := 0; i < len(list_slice); i++ {
@@ -79,9 +110,6 @@ func main() {
 			r.Packages = append(r.Packages, PackageInfo{PackageName: package_name, PackageVersion: package_version, PackageRepo: package_repo})
 		}
 	}
-
-	r.HostName = hostname
-	r.HostOs = runtime.GOOS
 
 	jsonBytes, err := json.Marshal(r)
 	if err != nil {

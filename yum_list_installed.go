@@ -25,7 +25,7 @@ type Resultslice struct {
 }
 
 func get_os_name() string {
-  cmd := exec.Command("cat", "/etc/issue")
+	cmd := exec.Command("cat", "/etc/issue")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		fmt.Println(err)
@@ -35,20 +35,20 @@ func get_os_name() string {
 	cmd.Start()
 	scanner := bufio.NewScanner(stdout)
 
-  var os_name string
-  i := 0
+	var os_name string
+	i := 0
 	for scanner.Scan() {
 		//Get first line
 		if i == 0 {
-      os_name = scanner.Text()
+			os_name = scanner.Text()
 			if err := scanner.Err(); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
-      break
-    }
-  }
-  return os_name
+			break
+		}
+	}
+	return os_name
 }
 
 func main() {
@@ -58,7 +58,7 @@ func main() {
 	if err != nil {
 		fmt.Println("Get Hostname error:", err)
 		return
-  }
+	}
 
 	r.HostName = host_name
 	r.HostOs = get_os_name()

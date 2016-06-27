@@ -51,16 +51,20 @@ func get_os_name() string {
 	return os_name
 }
 
-func main() {
-	var r Resultslice
-
+func get_host_name() string {
 	host_name, err := os.Hostname()
 	if err != nil {
 		fmt.Println("Get Hostname error:", err)
-		return
+		os.Exit(1)
 	}
 
-	r.HostName = host_name
+	return host_name
+}
+
+func main() {
+	var r Resultslice
+
+	r.HostName = get_host_name()
 	r.HostOs = get_os_name()
 
 	cmd := exec.Command("yum", "list", "installed")

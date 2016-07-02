@@ -55,6 +55,15 @@ func getOsName() string {
 	return os_name
 }
 
+func get_host_name() string {
+	host_name, err := os.Hostname()
+	if err != nil {
+		fmt.Println("Get Hostname error:", err)
+		os.Exit(1)
+	}
+	return host_name
+}
+
 func httpPost(url string, param []byte) int {
 	req, err := http.NewRequest(
 		"POST",
@@ -83,13 +92,7 @@ func httpPost(url string, param []byte) int {
 func main() {
 	var r Result
 
-	host_name, err := os.Hostname()
-	if err != nil {
-		fmt.Println("Get Hostname error:", err)
-		return
-	}
-
-	r.Post.HostName = host_name
+	r.Post.HostName = get_host_name()
 	r.Post.HostOs = getOsName()
 
 	cmd := exec.Command("yum", "list", "installed")

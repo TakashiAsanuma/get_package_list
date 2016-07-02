@@ -9,7 +9,9 @@ import (
 	"os/exec"
 	"regexp"
 	//"runtime"
+	"net/http"
 	"strings"
+	"time"
 )
 
 type PackageInfo struct {
@@ -18,13 +20,15 @@ type PackageInfo struct {
 	PackageRepo    string `json:"package_repo"`
 }
 
-type Resultslice struct {
-	HostName string
-	HostOs   string
-	Packages []PackageInfo
+type Result struct {
+	Post struct {
+		HostName string        `json:"host_name"`
+		HostOs   string        `json:"host_os"`
+		Packages []PackageInfo `json:"packages"`
+	} `json:"post"`
 }
 
-func get_os_name() string {
+func getOsName() string {
 	cmd := exec.Command("cat", "/etc/issue")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -51,8 +55,33 @@ func get_os_name() string {
 	return os_name
 }
 
+func httpPost(url string, param []byte) int {
+	req, err := http.NewRequest(
+		"POST",
+		url,
+		bytes.NewBuffer(param),
+	)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: time.Duration(15 * time.Second)}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	status := resp.StatusCode
+	defer resp.Body.Close()
+
+	return status
+}
+
 func main() {
-	var r Resultslice
+	var r Result
 
 	host_name, err := os.Hostname()
 	if err != nil {
@@ -60,8 +89,8 @@ func main() {
 		return
 	}
 
-	r.HostName = host_name
-	r.HostOs = get_os_name()
+	r.Post.HostName = host_name
+	r.Post.HostOs = getOsName()
 
 	cmd := exec.Command("yum", "list", "installed")
 	stdout, err := cmd.StdoutPipe()
@@ -107,17 +136,20 @@ func main() {
 		} else {
 			package_repo = list_slice[i]
 			n = 0
-			r.Packages = append(r.Packages, PackageInfo{PackageName: package_name, PackageVersion: package_version, PackageRepo: package_repo})
+			r.Post.Packages = append(r.Post.Packages, PackageInfo{PackageName: package_name, PackageVersion: package_version, PackageRepo: package_repo})
 		}
 	}
 
-	jsonBytes, err := json.Marshal(r)
+	result_json, err := json.Marshal(r)
 	if err != nil {
 		fmt.Println("JSON Marshal error:", err)
 		return
 	}
 
 	out := new(bytes.Buffer)
-	json.Indent(out, jsonBytes, "", "    ")
+	json.Indent(out, result_json, "", "    ")
 	fmt.Println(out.String())
+
+	resp := httpPost("http://10.0.2.2:4000/api/posts", result_json)
+	fmt.Println(resp)
 }

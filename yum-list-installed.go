@@ -203,12 +203,11 @@ func main() {
 
 	config := loadConfig()
 
-	log_level := config.LogLevel
-	setLogLevel(log_level)
+	setLogLevel(config.LogLevel)
 
 	api_key = config.ApiKey
 	if api_key == "" {
-		log.Fatalln("error: API Key is nil")
+		log.Fatalln("error: API Key is blank")
 	}
 
 	r.Post.ApiKey = api_key
@@ -218,7 +217,7 @@ func main() {
 
 	result_json, err := json.Marshal(r)
 	if err != nil {
-		log.Println("error: JSON Marshal error", err)
+		log.Fatalln("error: JSON Marshal error", err)
 	}
 
 	//out := new(bytes.Buffer)

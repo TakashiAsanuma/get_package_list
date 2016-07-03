@@ -204,7 +204,7 @@ func main() {
 
 	setLogLevel(config.LogLevel)
 
-	api_key = config.ApiKey
+	api_key := config.ApiKey
 	if api_key == "" {
 		log.Fatalln("error: API Key is blank")
 	}

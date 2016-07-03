@@ -174,6 +174,7 @@ func httpPost(url string, param []byte) {
 
 func main() {
 	var r Result
+	colog.SetMinLevel(colog.LInfo)
 	colog.Register()
 
 	config := loadConfig()

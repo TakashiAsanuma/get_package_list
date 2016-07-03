@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"fmt"
+	//"fmt"
+	"github.com/comail/colog"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -31,8 +33,7 @@ func getOsName() string {
 	cmd := exec.Command("cat", "/etc/issue")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalln("error: cann't get os name", err)
 	}
 
 	cmd.Start()
@@ -45,21 +46,21 @@ func getOsName() string {
 		if i == 0 {
 			os_name = scanner.Text()
 			if err := scanner.Err(); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				log.Fatalln("error: cann't get os name from scanner", err)
 			}
 			break
 		}
 	}
+	log.Println("info: get os name", os_name)
 	return os_name
 }
 
 func getHostName() string {
 	host_name, err := os.Hostname()
 	if err != nil {
-		fmt.Println("Get Hostname error:", err)
-		os.Exit(1)
+		log.Fatalln("error: cann't get host name", err)
 	}
+	log.Println("info: get host name", host_name)
 	return host_name
 }
 
@@ -69,8 +70,7 @@ func getInstalledList() []YumInfo {
 	cmd := exec.Command("yum", "list", "installed")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalln("error: cann't execute yum command", err)
 	}
 
 	cmd.Start()
@@ -83,8 +83,7 @@ func getInstalledList() []YumInfo {
 		if i > 1 {
 			lists = append(lists, scanner.Text())
 			if err := scanner.Err(); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				log.Fatalln("error: cann't get scanner from yum command", err)
 			}
 		}
 		i = i + 1
@@ -113,6 +112,7 @@ func getInstalledList() []YumInfo {
 			installed_list = append(installed_list, YumInfo{PackageName: package_name, PackageVersion: package_version, PackageRepo: package_repo})
 		}
 	}
+	log.Println("info: success to get yum list installed")
 	return installed_list
 }
 
@@ -123,26 +123,30 @@ func httpPost(url string, param []byte) int {
 		bytes.NewBuffer(param),
 	)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalln("error: cann't create http request", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: time.Duration(15 * time.Second)}
+	client := &http.Client{Timeout: time.Duration(5 * time.Second)}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalln("error: cann't execute http request", err)
 	}
 	status := resp.StatusCode
 	defer resp.Body.Close()
 
+	if status >= 400 {
+		log.Println("warn: fatal to http post request", status)
+	} else {
+		log.Println("info: success to http post request", status)
+	}
 	return status
 }
 
 func main() {
 	var r Result
+	colog.Register()
 
 	r.Post.HostName = getHostName()
 	r.Post.HostOs = getOsName()
@@ -150,14 +154,12 @@ func main() {
 
 	result_json, err := json.Marshal(r)
 	if err != nil {
-		fmt.Println("JSON Marshal error:", err)
-		return
+		log.Println("error: JSON Marshal error", err)
 	}
 
-	out := new(bytes.Buffer)
-	json.Indent(out, result_json, "", "    ")
-	fmt.Println(out.String())
+	//out := new(bytes.Buffer)
+	//json.Indent(out, result_json, "", "    ")
+	//fmt.Println(out.String())
 
-	resp := httpPost("http://10.0.2.2:4000/api/posts", result_json)
-	fmt.Println(resp)
+	httpPost("http://10.0.2.2:4000/api/posts", result_json)
 }

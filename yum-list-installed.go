@@ -19,7 +19,6 @@ import (
 
 var request_url string = "http://10.0.2.2:4000/api/posts"
 var config_path string = "/etc/yum-list-installed/yum-list-installed.conf"
-var api_key string = ""
 
 type Config struct {
 	ApiKey   string

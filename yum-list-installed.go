@@ -5,16 +5,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
-	//"runtime"
-	"net/http"
 	"strings"
 	"time"
 )
 
-type PackageInfo struct {
+type YumInfo struct {
 	PackageName    string `json:"package_name"`
 	PackageVersion string `json:"pachage_version"`
 	PackageRepo    string `json:"package_repo"`
@@ -22,9 +21,9 @@ type PackageInfo struct {
 
 type Result struct {
 	Post struct {
-		HostName string        `json:"host_name"`
-		HostOs   string        `json:"host_os"`
-		Packages []PackageInfo `json:"packages"`
+		HostName string    `json:"host_name"`
+		HostOs   string    `json:"host_os"`
+		Packages []YumInfo `json:"packages"`
 	} `json:"post"`
 }
 
@@ -64,8 +63,8 @@ func getHostName() string {
 	return host_name
 }
 
-func getInstalledList() []PackageInfo {
-	var installed_list []PackageInfo
+func getInstalledList() []YumInfo {
+	var installed_list []YumInfo
 
 	cmd := exec.Command("yum", "list", "installed")
 	stdout, err := cmd.StdoutPipe()
@@ -111,7 +110,7 @@ func getInstalledList() []PackageInfo {
 		} else {
 			package_repo = list_slice[i]
 			n = 0
-			installed_list = append(installed_list, PackageInfo{PackageName: package_name, PackageVersion: package_version, PackageRepo: package_repo})
+			installed_list = append(installed_list, YumInfo{PackageName: package_name, PackageVersion: package_version, PackageRepo: package_repo})
 		}
 	}
 	return installed_list

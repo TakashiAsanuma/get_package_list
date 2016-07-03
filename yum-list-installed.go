@@ -22,7 +22,8 @@ var config_path string = "/etc/yum-list-installed/yum-list-installed.conf"
 var api_key string = ""
 
 type Config struct {
-	ApiKey string
+	ApiKey   string
+	LogLevel string
 }
 
 type YumInfo struct {
@@ -38,6 +39,25 @@ type Result struct {
 		HostOs   string    `json:"host_os"`
 		Packages []YumInfo `json:"packages"`
 	} `json:"post"`
+}
+
+func setLogLevel(log_level string) {
+	switch log_level {
+	case "trace":
+		colog.SetMinLevel(colog.LTrace)
+	case "debug":
+		colog.SetMinLevel(colog.LDebug)
+	case "info":
+		colog.SetMinLevel(colog.LInfo)
+	case "warn":
+		colog.SetMinLevel(colog.LWarning)
+	case "error":
+		colog.SetMinLevel(colog.LError)
+	case "alert":
+		colog.SetMinLevel(colog.LAlert)
+	default:
+		colog.SetMinLevel(colog.LInfo)
+	}
 }
 
 func loadConfig() Config {
@@ -174,10 +194,18 @@ func httpPost(url string, param []byte) {
 
 func main() {
 	var r Result
-	colog.SetMinLevel(colog.LInfo)
+
 	colog.Register()
+	colog.SetFormatter(&colog.StdFormatter{
+		Colors: true,
+		Flag:   log.Ldate | log.Ltime | log.Lshortfile,
+	})
 
 	config := loadConfig()
+
+	log_level := config.LogLevel
+	setLogLevel(log_level)
+
 	api_key = config.ApiKey
 	if api_key == "" {
 		log.Fatalln("error: API Key is nil")

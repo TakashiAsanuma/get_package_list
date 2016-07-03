@@ -55,7 +55,7 @@ func getOsName() string {
 	return os_name
 }
 
-func get_host_name() string {
+func getHostName() string {
 	host_name, err := os.Hostname()
 	if err != nil {
 		fmt.Println("Get Hostname error:", err)
@@ -64,36 +64,8 @@ func get_host_name() string {
 	return host_name
 }
 
-func httpPost(url string, param []byte) int {
-	req, err := http.NewRequest(
-		"POST",
-		url,
-		bytes.NewBuffer(param),
-	)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: time.Duration(15 * time.Second)}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	status := resp.StatusCode
-	defer resp.Body.Close()
-
-	return status
-}
-
-func main() {
-	var r Result
-
-	r.Post.HostName = get_host_name()
-	r.Post.HostOs = getOsName()
+func getInstalledList() []PackageInfo {
+	var installed_list []PackageInfo
 
 	cmd := exec.Command("yum", "list", "installed")
 	stdout, err := cmd.StdoutPipe()
@@ -139,9 +111,43 @@ func main() {
 		} else {
 			package_repo = list_slice[i]
 			n = 0
-			r.Post.Packages = append(r.Post.Packages, PackageInfo{PackageName: package_name, PackageVersion: package_version, PackageRepo: package_repo})
+			installed_list = append(installed_list, PackageInfo{PackageName: package_name, PackageVersion: package_version, PackageRepo: package_repo})
 		}
 	}
+	return installed_list
+}
+
+func httpPost(url string, param []byte) int {
+	req, err := http.NewRequest(
+		"POST",
+		url,
+		bytes.NewBuffer(param),
+	)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: time.Duration(15 * time.Second)}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	status := resp.StatusCode
+	defer resp.Body.Close()
+
+	return status
+}
+
+func main() {
+	var r Result
+
+	r.Post.HostName = getHostName()
+	r.Post.HostOs = getOsName()
+	r.Post.Packages = getInstalledList()
 
 	result_json, err := json.Marshal(r)
 	if err != nil {
